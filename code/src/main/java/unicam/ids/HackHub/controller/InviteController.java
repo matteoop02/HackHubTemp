@@ -6,12 +6,12 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
+import lombok.RequiredArgsConstructor;
 import unicam.ids.HackHub.dto.requests.invite.*;
 import unicam.ids.HackHub.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import unicam.ids.HackHub.service.InviteService;
@@ -19,26 +19,26 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/invites")
+@RequiredArgsConstructor
 @Tag(name = "Inviti", description = "Gestione degli inviti: Interni (da e verso i team) ed Esterni (per utenti invitati ad iscriversi alla piattaforma)")
 public class InviteController {
 
-    @Autowired
-    private InviteService inviteService;
+    private final InviteService inviteService;
 
     // ------------------------------- OUTSIDE INVITE MANAGE
     // -------------------------------
 
     @PostMapping("/public/inviteOutsideUser")
-    @Operation(summary = "Invia invito esterno", description = "Permette a un utente di invitarne uno non registrato alla piattaforma.", requestBody = @RequestBody(required = true, content = @Content(mediaType = "application/json", examples = @ExampleObject(name = "Esempio di invio invito.", value = """
-            {
-              "recipientEmail": "matteo.fagnani@studenti.unicam.it",
-              "message": "qualcosa",
-            }
+    @Operation(summary = "Creazione nuovo invito esterno", description = "Permette l'invio di un nuovo invito esterno", requestBody = @RequestBody(description = "Dati dell'invito", required = true, content = @Content(mediaType = "application/json", examples = @ExampleObject(name = "Esempio invito", value = """
+                {
+                  "recipientName": "test@example.com",
+                  "message": "Qualcosa"
+                }
             """))))
     @ApiResponse(responseCode = "200", description = "Invito inviato con successo")
     @ApiResponse(responseCode = "400", description = "Errore nella richiesta o dati non validi")
     public ResponseEntity<InviteOutsidePlatform> inviteOutsideUser(Authentication authentication,
-            @Valid @RequestBody OutsideInviteRequest outsideInviteRequest) {
+            @RequestBody @Valid OutsideInviteRequest outsideInviteRequest) {
         try {
             InviteOutsidePlatform invite = inviteService.inviteOutsideUser(authentication, outsideInviteRequest);
 

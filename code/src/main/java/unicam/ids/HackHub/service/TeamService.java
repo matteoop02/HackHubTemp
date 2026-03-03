@@ -2,9 +2,9 @@ package unicam.ids.HackHub.service;
 
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import unicam.ids.HackHub.dto.requests.team.CreateTeamRequest;
 import unicam.ids.HackHub.dto.responses.TeamMemberResponse;
 import unicam.ids.HackHub.exceptions.ResourceNotFoundException;
@@ -16,37 +16,35 @@ import unicam.ids.HackHub.repository.TeamRepository;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Service
+@RequiredArgsConstructor
 public class TeamService {
-    @Autowired
-    private TeamRepository teamRepository;
-    @Autowired
-    private UserService userService;
+    private final TeamRepository teamRepository;
+    private final UserService userService;
 
     @Transactional
     public void createTeam(Authentication authentication, CreateTeamRequest request) {
-        //Recupero l'utente autenticato
+        // Recupero l'utente autenticato
         User user = userService.findUserByUsername(authentication.getName());
 
-        if(existsByName(request.name()))
+        if (existsByName(request.name()))
             throw new IllegalArgumentException("Nome team già in uso!");
 
-        //Creo il nuovo team
+        // Creo il nuovo team
         Team team = Team.builder()
                 .name(request.name())
                 .teamLeader(user)
                 .isPublic(request.isPublic())
                 .build();
 
-        //Aggiungo l'utente alla lista dei membri
+        // Aggiungo l'utente alla lista dei membri
         team.setMembers(new ArrayList<>());
         team.setMentors(new ArrayList<>());
 
         team.getMembers().add(user);
 
-        userService.changeRole(user, 3L);   //Cambio ruolo all'utente in Leader del Team
-        userService.assignTeamToUser(user.getUsername(), team); //Assegno il team all'utente
+        userService.changeRole(user, 3L); // Cambio ruolo all'utente in Leader del Team
+        userService.assignTeamToUser(user.getUsername(), team); // Assegno il team all'utente
 
         userService.save(user);
         save(team);
@@ -60,15 +58,14 @@ public class TeamService {
         team.getMembers().add(user); // aggiungi l'utente
 
         if (proposedRole.equals(team.getTeamLeader().getRole())) {
-            userService.changeRole(team.getTeamLeader(), 2L);   //Il leader diventa membro
-            userService.changeRole(user, 3L);   //User diventa leader
-        }
-        else
-            userService.changeRole(user, 2L); //Set all'utente il ruolo proposto
+            userService.changeRole(team.getTeamLeader(), 2L); // Il leader diventa membro
+            userService.changeRole(user, 3L); // User diventa leader
+        } else
+            userService.changeRole(user, 2L); // Set all'utente il ruolo proposto
 
-        userService.assignTeamToUser(user.getUsername(), team); //Assegno il team all'utente
+        userService.assignTeamToUser(user.getUsername(), team); // Assegno il team all'utente
 
-        save(team);   // salva il team
+        save(team); // salva il team
     }
 
     @Transactional
@@ -81,8 +78,8 @@ public class TeamService {
         User user = userService.findUserByUsername(authentication.getName());
         team.addMember(user);
 
-        userService.changeRole(user, 2L); //Set all'utente il ruolo di membro
-        userService.assignTeamToUser(user.getUsername(), team); //Assegno il team all'utente
+        userService.changeRole(user, 2L); // Set all'utente il ruolo di membro
+        userService.assignTeamToUser(user.getUsername(), team); // Assegno il team all'utente
 
         save(team);
     }
@@ -97,7 +94,7 @@ public class TeamService {
             throw new IllegalArgumentException("Utente non è nel team");
 
         team.getMembers().remove(member); // rimozione l'utente
-        save(team);   // salva il team
+        save(team); // salva il team
     }
 
     @Transactional
@@ -107,7 +104,7 @@ public class TeamService {
         User user = userService.findUserByUsername(authentication.getName());
         team.removeMember(user);
 
-        userService.changeRole(user, 1L); //Set all'utente il ruolo di utente
+        userService.changeRole(user, 1L); // Set all'utente il ruolo di utente
 
         save(team);
     }
@@ -126,19 +123,18 @@ public class TeamService {
     }
 
     public List<TeamMemberResponse> getTeamMembers(Authentication authentication) {
-    User user = userService.findUserByUsername(authentication.getName());
-    if (user.getTeam() == null) {
-        throw new IllegalArgumentException("L'utente non appartiene a nessun team");
+        User user = userService.findUserByUsername(authentication.getName());
+        if (user.getTeam() == null) {
+            throw new IllegalArgumentException("L'utente non appartiene a nessun team");
+        }
+        return user.getTeam().getMembers().stream()
+                .map(u -> new TeamMemberResponse(
+                        u.getUsername(),
+                        u.getName(),
+                        u.getSurname(),
+                        u.getEmail(),
+                        u.getRole().getName()))
+                .toList();
     }
-    return user.getTeam().getMembers().stream()
-            .map(u -> new TeamMemberResponse(
-                    u.getUsername(),
-                    u.getName(),
-                    u.getSurname(),
-                    u.getEmail(),
-                    u.getRole().getName()
-            ))
-            .toList();
-}
 
 }

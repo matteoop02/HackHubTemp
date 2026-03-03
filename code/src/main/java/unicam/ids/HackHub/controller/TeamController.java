@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -19,10 +19,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/team")
+@RequiredArgsConstructor
 @Tag(name = "Team", description = "Gestione dinamiche dei team")
 public class TeamController {
-    @Autowired
-    private TeamService teamService;
+    private final TeamService teamService;
 
     @PostMapping("/utente/create")
     @Operation(summary = "Creazione nuovo team", description = "Permette la registrazione di un nuovo team da parte di un Utente")

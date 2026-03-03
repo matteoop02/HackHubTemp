@@ -1,7 +1,7 @@
 package unicam.ids.HackHub.service;
 
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import unicam.ids.HackHub.dto.requests.call.CallBookingRequest;
@@ -16,25 +16,25 @@ import unicam.ids.HackHub.repository.CallBookingRepository;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CallBookingService {
 
-    @Autowired
-    private CallBookingRepository callBookingRepository;
-    @Autowired
-    private TeamService teamService;
-    @Autowired
-    private UserService userService;
+    private final CallBookingRepository callBookingRepository;
+    private final TeamService teamService;
+    private final UserService userService;
 
     public List<CallBooking> getBookingsForMentor(MentorCallsRequest mentorCallsRequest) {
-        return callBookingRepository.findByMentorAndStatus(userService.findUserByUsername(mentorCallsRequest.mentorUsername()), CallState.PENDING);
+        return callBookingRepository.findByMentorAndStatus(
+                userService.findUserByUsername(mentorCallsRequest.mentorUsername()), CallState.PENDING);
     }
 
     public List<CallBooking> getBookingsForTeam(TeamCallsRequest teamCallsRequest) {
-        return callBookingRepository.findByTeamAndStatus(teamService.findByName(teamCallsRequest.teamName()), CallState.PENDING);
+        return callBookingRepository.findByTeamAndStatus(teamService.findByName(teamCallsRequest.teamName()),
+                CallState.PENDING);
     }
 
     @Transactional
-    public CallBooking bookCall(Authentication authentication, CallBookingRequest  callBookingRequest) {
+    public CallBooking bookCall(Authentication authentication, CallBookingRequest callBookingRequest) {
         User leader = userService.findUserByUsername(authentication.getName());
         Team team = teamService.findByName(leader.getTeam().getName());
 
@@ -66,14 +66,14 @@ public class CallBookingService {
         return save(callBooking);
     }
 
-    public CallBooking findByTeamAndMentor(Team team, User mentor){
+    public CallBooking findByTeamAndMentor(Team team, User mentor) {
         return callBookingRepository.findByTeamAndMentor(team, mentor)
-                .orElseThrow(() -> new IllegalArgumentException("Nessuna call trovata con questo mentor per il tuo team"));
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Nessuna call trovata con questo mentor per il tuo team"));
     }
 
     public CallBooking save(CallBooking callBooking) {
         return callBookingRepository.save(callBooking);
     }
-
 
 }

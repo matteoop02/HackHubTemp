@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import unicam.ids.HackHub.enums.InviteState;
+import unicam.ids.HackHub.model.state.invite.InviteStateFactory;
 
 import java.time.LocalDateTime;
 
@@ -59,37 +60,28 @@ public class InviteInsidePlatform implements Invite {
     private String message;
 
     @Override
+    public void setStatus(InviteState status) {
+        this.status = status;
+    }
+
+    @Override
     public void send() {
-        if (this.status != InviteState.PENDING) {
-            throw new IllegalStateException("L'invito può essere inviato solo se è in stato PENDING");
-        }
+        InviteStateFactory.from(this.status).send(this);
     }
 
     @Override
     public void accept() {
-        if (isExpired()) {
-            throw new IllegalStateException("L'invito è scaduto");
-        }
-        if (this.status != InviteState.PENDING) {
-            throw new IllegalStateException("Solo gli inviti PENDING possono essere accettati");
-        }
-        this.status = InviteState.ACCEPTED;
+        InviteStateFactory.from(this.status).accept(this);
     }
 
     @Override
     public void reject() {
-        if (this.status != InviteState.PENDING) {
-            throw new IllegalStateException("Solo gli inviti PENDING possono essere rifiutati");
-        }
-        this.status = InviteState.REJECTED;
+        InviteStateFactory.from(this.status).reject(this);
     }
 
     @Override
     public void cancel() {
-        if (this.status != InviteState.PENDING) {
-            throw new IllegalStateException("Solo gli inviti PENDING possono essere cancellati");
-        }
-        this.status = InviteState.CANCELLED;
+        InviteStateFactory.from(this.status).cancel(this);
     }
 
     @Override

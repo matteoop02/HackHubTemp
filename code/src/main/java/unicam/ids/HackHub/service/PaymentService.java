@@ -1,6 +1,6 @@
 package unicam.ids.HackHub.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import unicam.ids.HackHub.dto.responses.PaymentStatusResponse;
@@ -12,10 +12,10 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class PaymentService {
 
-    @Autowired
-    private PaymentRepository paymentRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional
     public void payWinner(Hackathon hackathon, User organizer) {
@@ -41,26 +41,22 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public PaymentStatusResponse verifyPaymentForHackathon(Hackathon hackathon) {
-        Optional<Payment> paymentOpt =
-                paymentRepository.findTopByHackathonIdOrderByPaymentDateDesc(hackathon.getId());
+        Optional<Payment> paymentOpt = paymentRepository.findTopByHackathonIdOrderByPaymentDateDesc(hackathon.getId());
 
         if (paymentOpt.isEmpty()) {
             return new PaymentStatusResponse(
                     false, null, null, null, null, null,
                     hackathon.getReward(),
-                    false, false
-            );
+                    false, false);
         }
 
         Payment payment = paymentOpt.get();
         Team winner = hackathon.getTeamWinner();
-        boolean receivingMatchesWinner =
-                winner != null && payment.getReceivingTeam() != null
-                        && payment.getReceivingTeam().getId().equals(winner.getId());
+        boolean receivingMatchesWinner = winner != null && payment.getReceivingTeam() != null
+                && payment.getReceivingTeam().getId().equals(winner.getId());
 
         Double expected = hackathon.getReward();
-        boolean amountMatchesReward =
-                payment.getAmount() != null && payment.getAmount().equals(expected);
+        boolean amountMatchesReward = payment.getAmount() != null && payment.getAmount().equals(expected);
 
         return new PaymentStatusResponse(
                 true,
@@ -71,9 +67,10 @@ public class PaymentService {
                 payment.getAmount(),
                 expected,
                 amountMatchesReward,
-                receivingMatchesWinner
-        );
+                receivingMatchesWinner);
     }
 
-    public Payment save(Payment payment) { return paymentRepository.save(payment); }
+    public Payment save(Payment payment) {
+        return paymentRepository.save(payment);
+    }
 }

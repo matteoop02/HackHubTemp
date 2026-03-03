@@ -25,19 +25,26 @@ import java.util.List;
 @Service
 public class HackathonService {
 
-    @Autowired
-    private HackathonRepository hackathonRepository;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    @Lazy
-    private SubmissionService submissionService;
-    @Autowired
-    private TeamService teamService;
-    @Autowired
-    private PaymentService paymentService;
-    @Autowired
-    private EmailService emailService;
+    private final HackathonRepository hackathonRepository;
+    private final UserService userService;
+    private final SubmissionService submissionService;
+    private final TeamService teamService;
+    private final PaymentService paymentService;
+    private final EmailService emailService;
+
+    public HackathonService(HackathonRepository hackathonRepository,
+            UserService userService,
+            @Lazy SubmissionService submissionService,
+            TeamService teamService,
+            PaymentService paymentService,
+            EmailService emailService) {
+        this.hackathonRepository = hackathonRepository;
+        this.userService = userService;
+        this.submissionService = submissionService;
+        this.teamService = teamService;
+        this.paymentService = paymentService;
+        this.emailService = emailService;
+    }
 
     // ----------------------- GET -----------------------
 
@@ -48,16 +55,17 @@ public class HackathonService {
 
     @Transactional(readOnly = true)
     public List<Hackathon> getHackathonsByUser(User user) {
-        List<Hackathon> hackathons = new ArrayList<>();
+        Long roleId = user.getRole().getId();
 
-        if (user.getRole().getId() == 6L)
-            hackathons = hackathonRepository.findHackathonByOrganizer(user);
-        else if (user.getRole().getId() == 5L)
-            hackathons = hackathonRepository.findHackathonByJudge(user);
-        else if (user.getRole().getId() == 4L)
-            hackathons = hackathonRepository.findHackathonByMentors(user);
+        // Use constants or a more robust role check mechanism
+        if (roleId.equals(6L)) // organizer
+            return hackathonRepository.findHackathonByOrganizer(user);
+        if (roleId.equals(5L)) // judge
+            return hackathonRepository.findHackathonByJudge(user);
+        if (roleId.equals(4L)) // mentor
+            return hackathonRepository.findHackathonByMentors(user);
 
-        return hackathons;
+        return new ArrayList<>();
     }
 
     @Transactional(readOnly = true)
@@ -91,7 +99,8 @@ public class HackathonService {
         save(hackathon);
     }
 
-    // ----------------------- SIGN/UNSUBSCRIBE TEAM TO HACKATHON -----------------------
+    // ----------------------- SIGN/UNSUBSCRIBE TEAM TO HACKATHON
+    // -----------------------
 
     @Transactional
     public void signTeamToHackathon(Authentication authentication, SignTeamRequest request) {
@@ -123,35 +132,27 @@ public class HackathonService {
     // ----------------------- FIND -----------------------
 
     public Hackathon findHackathonByName(String hackathonName) {
-        String normalized = hackathonName.trim().toLowerCase();
-        return hackathonRepository.findAll().stream()
-                .filter(h -> h.getName().trim().toLowerCase().equals(normalized))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Hackathon non trovato"));
+        return hackathonRepository.findHackathonByName(hackathonName.trim())
+                .orElseThrow(() -> new ResourceNotFoundException("Hackathon non trovato: " + hackathonName));
     }
 
-    public Hackathon findHackathonById(int id) {
-        return hackathonRepository.findAll().stream()
-                .filter(h -> h.getId() == id)
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Hackathon non trovato"));
+    public Hackathon findHackathonById(Long id) {
+        return hackathonRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hackathon non trovato ID: " + id));
     }
 
     @Transactional(readOnly = true)
-    public Hackathon findHackathonInfo(int id) {
+    public Hackathon findHackathonInfo(Long id) {
         return findHackathonById(id);
     }
 
-    public Hackathon findPublicHackathonInfo(int id) {
+    public Hackathon findPublicHackathonInfo(Long id) {
         return hackathonRepository.findHackathonByIdAndIsPublic(id, true)
                 .orElseThrow(() -> new ResourceNotFoundException("Hackathon non trovato"));
     }
 
-    public Hackathon findHackathonByIdAndIsPublic(int id) {
-        return hackathonRepository.findAll().stream()
-                .filter(h -> h.getId() == id)
-                .filter(Hackathon::getIsPublic)
-                .findFirst()
+    public Hackathon findHackathonByIdAndIsPublic(Long id) {
+        return hackathonRepository.findHackathonByIdAndIsPublic(id, true)
                 .orElseThrow(() -> new ResourceNotFoundException("Hackathon non trovato"));
     }
 
@@ -196,7 +197,8 @@ public class HackathonService {
     @Transactional
     public void removeMentor(RemoveMentorFromHackathonRequest removeMentorFromHackathonRequest) {
         Hackathon hackathon = findHackathonByName(removeMentorFromHackathonRequest.hackathonName());
-        hackathon.getMentors().remove(userService.findUserByUsername(removeMentorFromHackathonRequest.mentorUsername()));
+        hackathon.getMentors()
+                .remove(userService.findUserByUsername(removeMentorFromHackathonRequest.mentorUsername()));
         hackathonRepository.save(hackathon);
     }
 
@@ -234,5 +236,7 @@ public class HackathonService {
         hackathonRepository.save(hackathon);
     }
 
-    public void saveAll(List<Hackathon> hackathons) { hackathonRepository.saveAll(hackathons); }
+    public void saveAll(List<Hackathon> hackathons) {
+        hackathonRepository.saveAll(hackathons);
+    }
 }

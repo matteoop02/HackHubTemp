@@ -1,5 +1,6 @@
 package unicam.ids.HackHub.service.auth;
 
+import lombok.RequiredArgsConstructor;
 import unicam.ids.HackHub.config.auth.CustomUserDetailsService;
 import unicam.ids.HackHub.dto.requests.auth.LoginUserRequest;
 import unicam.ids.HackHub.dto.requests.auth.RegisterUserRequest;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -26,27 +28,12 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final UserRoleService userRoleService;
 
-    public AuthService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       UserService userService,
-                       AuthenticationManager authenticationManager,
-                       JwtService jwtService,
-                       CustomUserDetailsService customUserDetailsService, UserRoleService userRoleService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.userService = userService;
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
-        this.customUserDetailsService = customUserDetailsService;
-        this.userRoleService = userRoleService;
-    }
-
     // Registra un utente
     @Transactional
     public void register(RegisterUserRequest request) {
         // Controlla unicità email e username
         if (userRepository.existsByUsername(request.username()))
-              throw new IllegalArgumentException("Username già esistente" + request.username());
+            throw new IllegalArgumentException("Username già esistente" + request.username());
 
         // Crea l'utente
         User user = new User();
@@ -68,8 +55,7 @@ public class AuthService {
     public AuthResponse login(LoginUserRequest request) {
         // 1. Autentica username + password
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
-        );
+                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
 
         // 2. Carica l’utente tramite il CustomUserDetailsService
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(request.username());

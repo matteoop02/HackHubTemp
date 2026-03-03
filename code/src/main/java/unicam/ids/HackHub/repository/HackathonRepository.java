@@ -31,5 +31,5 @@ public interface HackathonRepository extends JpaRepository<Hackathon, Long> {
 
     List<Hackathon> findByStateAndEndDateLessThanEqual(HackathonState hackathonState, LocalDateTime now);
 
-    Optional<Hackathon> findHackathonByIdAndIsPublic(int id, boolean b);
+    Optional<Hackathon> findHackathonByIdAndIsPublic(Long id, boolean isPublic);
 }

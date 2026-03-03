@@ -32,12 +32,14 @@ public class InviteService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public InviteOutsidePlatform inviteOutsideUser(Authentication authentication, OutsideInviteRequest outsideInviteRequest) {
-        if(existsBySenderUsernameAndRecipientEmailAndStatus(
+    public InviteOutsidePlatform inviteOutsideUser(Authentication authentication,
+            OutsideInviteRequest outsideInviteRequest) {
+        if (existsBySenderUsernameAndRecipientEmailAndStatus(
                 userService.findUserByUsername(authentication.getName()),
                 outsideInviteRequest.recipientEmail(),
                 InviteState.PENDING))
-            throw new IllegalStateException("Esiste già un invito pendente per " + outsideInviteRequest.recipientEmail() + "da parte di " + authentication.getName());
+            throw new IllegalStateException("Esiste già un invito pendente per " + outsideInviteRequest.recipientEmail()
+                    + "da parte di " + authentication.getName());
 
         User senderUser = userService.findUserByUsername(authentication.getName());
         InviteOutsidePlatform invite = inviteFactory.createOutsideInvite(
@@ -46,7 +48,8 @@ public class InviteService {
         invite.send();
         InviteOutsidePlatform saved = outsideInviteRepository.save(invite);
 
-        emailService.sendEmail(outsideInviteRequest.recipientEmail(), senderUser.getEmail(), "Invito da HackHub",outsideInviteRequest.message());
+        emailService.sendEmail(outsideInviteRequest.recipientEmail(), senderUser.getEmail(), "Invito da HackHub",
+                outsideInviteRequest.message());
 
         return saved;
     }
@@ -62,28 +65,17 @@ public class InviteService {
         if (invite.getStatus() != InviteState.PENDING)
             throw new IllegalStateException("Invito non più valido");
 
-       if (userService.existsUserByUsername(request.username()))
+        if (userService.existsUserByUsername(request.username()))
             throw new IllegalArgumentException("Username già esistente: " + request.username());
 
-       try {
+        try {
             userService.findUserByEmail(invite.getRecipientEmail());
             throw new IllegalArgumentException("Email già registrata: " + invite.getRecipientEmail());
         } catch (Exception ignored) {
         }
 
-        //Crea utente sulla piattaforma
-        User user = User.builder()
-                .username(request.username())
-                .email(invite.getRecipientEmail())
-                .name(request.name())
-                .surname(request.surname())
-                .password(passwordEncoder.encode(request.password()))
-                .dateOfBirth(request.dateOfBirth())
-                .role(userRoleService.findUserRoleById(1L))
-                .isDeleted(false)
-                .build();
-
-        userService.save(user);
+        // Delegate user registration to UserService
+        userService.registerUserFromInvite(request, invite.getRecipientEmail());
 
         invite.accept();
         outsideInviteRepository.save(invite);
@@ -97,22 +89,25 @@ public class InviteService {
         outsideInviteRepository.save(invite);
     }
 
-    //------------------------------- INSIDE INVITE MANAGE -------------------------------
+    // ------------------------------- INSIDE INVITE MANAGE
+    // -------------------------------
 
     @Transactional
     public InviteInsidePlatform inviteUserToTeam(InsideInviteRequest insideInviteRequest) {
-        //Carico gli utenti
+        // Carico gli utenti
         User senderUser = userService.findUserByUsername(insideInviteRequest.senderUsername());
         User recipientUser = userService.findUserByUsername(insideInviteRequest.recipientUsername());
 
-        // Verifica che non ci sia già un invito pendente per un dato utente da un dato team
+        // Verifica che non ci sia già un invito pendente per un dato utente da un dato
+        // team
         if (existsByRecipientUserAndTeamAndStatus(recipientUser, senderUser.getTeam(), InviteState.PENDING))
             throw new IllegalStateException("Esiste già un invito pendente per questo utente");
 
-        //Carico il ruolo
+        // Carico il ruolo
         UserRole proposedRole = userRoleService.findUserRoleById(insideInviteRequest.proposedRoleId());
 
-        InviteInsidePlatform invite = inviteFactory.createTeamInvite(senderUser, recipientUser, proposedRole, insideInviteRequest.message());
+        InviteInsidePlatform invite = inviteFactory.createTeamInvite(senderUser, recipientUser, proposedRole,
+                insideInviteRequest.message());
 
         invite.send();
         InviteInsidePlatform saved = insideInviteRepository.save(invite);
@@ -133,7 +128,8 @@ public class InviteService {
         insideInviteRepository.save(invite);
 
         // Aggiungi l'utente al team
-        teamService.addMemberToTeam(invite.getTeam(), userService.findUserByUsername(authentication.getName()), invite.getProposedRole());
+        teamService.addMemberToTeam(invite.getTeam(), userService.findUserByUsername(authentication.getName()),
+                invite.getProposedRole());
         notificationService.notifyInviteAccepted(invite);
     }
 
@@ -149,16 +145,18 @@ public class InviteService {
         notificationService.notifyInviteRejected(invite);
     }
 
-    //------------------------------- FIND INVITE -------------------------------
+    // ------------------------------- FIND INVITE -------------------------------
 
     @Transactional(readOnly = true)
     public List<InviteInsidePlatform> findPendingInvitesForUser(Authentication authentication) {
-        return insideInviteRepository.findByRecipientUserAndStatus(userService.findUserByUsername(authentication.getName()), InviteState.PENDING);
+        return insideInviteRepository.findByRecipientUserAndStatus(
+                userService.findUserByUsername(authentication.getName()), InviteState.PENDING);
     }
 
     @Transactional(readOnly = true)
     public List<InviteInsidePlatform> findTeamInvites(Authentication authentication) {
-        Team team = teamService.findByName(userService.findUserByUsername(authentication.getName()).getTeam().getName());
+        Team team = teamService
+                .findByName(userService.findUserByUsername(authentication.getName()).getTeam().getName());
         return insideInviteRepository.findByTeamAndStatus(team, InviteState.PENDING);
     }
 
@@ -178,7 +176,7 @@ public class InviteService {
         return allInvites;
     }
 
-    //------------------------------- UTILITY -------------------------------
+    // ------------------------------- UTILITY -------------------------------
 
     @Transactional
     public InviteInsidePlatform findInviteById(Long inviteId) {
@@ -198,7 +196,9 @@ public class InviteService {
     }
 
     @Transactional
-    public boolean existsBySenderUsernameAndRecipientEmailAndStatus(User senderUser, String recipientEmail, InviteState inviteStatus) {
-        return outsideInviteRepository.existsBySenderUserAndRecipientEmailAndStatus(senderUser, recipientEmail, inviteStatus);
+    public boolean existsBySenderUsernameAndRecipientEmailAndStatus(User senderUser, String recipientEmail,
+            InviteState inviteStatus) {
+        return outsideInviteRepository.existsBySenderUserAndRecipientEmailAndStatus(senderUser, recipientEmail,
+                inviteStatus);
     }
 }

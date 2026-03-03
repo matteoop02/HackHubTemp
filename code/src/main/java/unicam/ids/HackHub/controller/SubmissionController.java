@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -18,11 +18,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/submission")
+@RequiredArgsConstructor
 @Tag(name = "Sottomissioni", description = "Gestione delle sottomissioni")
 public class SubmissionController {
 
-    @Autowired
-    private SubmissionService submissionService;
+    private final SubmissionService submissionService;
 
     // ------------------------------- STAFF -------------------------------
 

@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +16,11 @@ import unicam.ids.HackHub.service.ReportService;
 
 @RestController
 @RequestMapping("/api/report")
+@RequiredArgsConstructor
 @Tag(name = "Report", description = "Gestione delle segnalazioni (violazioni, comportamenti scorretti, richieste ai organizzatori)")
 public class ReportController {
 
-    @Autowired
-    private ReportService reportService;
+    private final ReportService reportService;
 
     @PostMapping("/mentor/reportRequest")
     @Operation(summary = "Invia segnalazione all'organizzatore", description = "Permette a un mentor autenticato di inviare una segnalazione riguardante una richiesta o un comportamento scorretto a un organizzatore.", requestBody = @RequestBody(required = true, content = @Content(mediaType = "application/json", examples = @ExampleObject(name = "Esempio segnalazione", value = """

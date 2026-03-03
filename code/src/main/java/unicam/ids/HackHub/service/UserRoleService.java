@@ -1,15 +1,15 @@
 package unicam.ids.HackHub.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import unicam.ids.HackHub.model.UserRole;
 import unicam.ids.HackHub.repository.UserRoleRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UserRoleService {
 
-    @Autowired
-    private UserRoleRepository userRoleRepository;
+    private final UserRoleRepository userRoleRepository;
 
     public UserRole findUserRoleById(Long userRoleId) {
         return userRoleRepository.findById(userRoleId)
